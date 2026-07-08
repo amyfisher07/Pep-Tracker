@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peptide Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #F1EAD9;
+    --card: #FBF7EC;
+    --ink: #26201A;
+    --ink-muted: #6E6656;
+    --line: #D9CEB2;
+    --amber: #C0752B;
+    --amber-deep: #96591D;
+    --teal: #35655F;
+    --off-day: #C7BBA0;
+    --danger: #A8503C;
+    --radius: 3px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--paper), var(--paper));
+    background-color: var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    padding: 40px 20px 80px;
+  }
+  .wrap{ max-width: 780px; margin: 0 auto; }
+
+  header{ margin-bottom: 36px; border-bottom: 2px solid var(--ink); padding-bottom: 16px; display:flex; justify-content:space-between; align-items:flex-end; gap: 16px; flex-wrap: wrap;}
+  header h1{
+    font-family:'Fraunces', serif;
+    font-optical-sizing: auto;
+    font-weight: 900;
+    font-size: 2.4rem;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  header p{ margin:0; color: var(--ink-muted); font-size: 0.9rem; }
+  header .stamp{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--amber-deep);
+    border: 1px solid var(--amber-deep);
+    padding: 4px 8px;
+    border-radius: var(--radius);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .add-btn{
+    display:block; width:100%;
+    background: var(--ink); color: var(--paper);
+    border:none; border-radius: var(--radius);
+    font-family:'IBM Plex Sans', sans-serif; font-weight:600; font-size:0.95rem;
+    padding: 14px; cursor:pointer; margin-bottom: 28px;
+    letter-spacing: 0.02em;
+    transition: background .15s ease;
+  }
+  .add-btn:hover{ background: var(--amber-deep); }
+
+  .backup-bar{ display:flex; gap:8px; margin-bottom: 22px; }
+  .backup-bar button{
+    flex:1; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 10px; font-family:'IBM Plex Sans', sans-serif; font-weight:600; font-size: 0.78rem;
+    color: var(--ink-muted); cursor:pointer;
+  }
+  .backup-bar button:hover{ border-color: var(--ink); color: var(--ink); }
+
+  .card{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    margin-bottom: 20px;
+    position: relative;
+    box-shadow: 0 1px 0 rgba(38,32,26,0.04);
+  }
+  .card::before{
+    content:"";
+    position:absolute; left:0; top: 14px; bottom: 14px; width: 3px;
+    background: var(--amber);
+    border-radius: 2px;
+  }
+  .card.finished::before{ background: var(--teal); }
+
+  .card-head{ display:flex; justify-content:space-between; align-items:flex-start; gap: 12px; margin-bottom: 14px; }
+  .card-head h2{
+    font-family:'Fraunces', serif; font-weight: 600; font-size: 1.35rem; margin: 0;
+  }
+  .card-head .bottle-label{ font-family:'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--ink-muted); margin-top: 3px;}
+
+  .card-actions{ display:flex; gap: 8px; flex-shrink:0; }
+  .icon-btn{
+    background:none; border: 1px solid var(--line); color: var(--ink-muted);
+    border-radius: var(--radius); padding: 5px 10px; cursor:pointer; font-size: 0.75rem;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+  .icon-btn:hover{ border-color: var(--ink); color: var(--ink); }
+
+  .stat-row{
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr));
+    gap: 12px 20px; margin: 14px 0 18px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .stat{ }
+  .stat .label{ font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin-bottom: 3px; }
+  .stat .value{ font-size: 0.92rem; font-weight: 600; }
+
+  .schedule-line{
+    font-size: 0.82rem; color: var(--ink-muted); margin-bottom: 14px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .schedule-line b{ color: var(--ink); font-weight:600; }
+
+  .progress-meta{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom: 6px; }
+  .progress-meta .day-count{ font-family:'IBM Plex Mono', monospace; font-size: 0.8rem; color: var(--ink-muted); }
+  .progress-meta .status-pill{
+    font-family:'IBM Plex Mono', monospace; font-size: 0.68rem; text-transform:uppercase; letter-spacing:0.05em;
+    padding: 2px 8px; border-radius: 20px; background: var(--amber); color: #fff;
+  }
+  .status-pill.done{ background: var(--teal); }
+
+  .ribbon{ display:flex; flex-wrap:wrap; gap:3px; margin-bottom: 4px; }
+  .ribbon .day{
+    width: 10px; height: 14px; border-radius: 1px;
+    background: var(--off-day); opacity: 0.35;
+  }
+  .ribbon .day.on-day{ background: var(--amber); opacity: 0.35; }
+  .ribbon .day.past{ opacity: 1; }
+  .ribbon .day.today{ outline: 2px solid var(--ink); outline-offset: 1px; }
+  .ribbon-legend{ font-size: 0.68rem; color: var(--ink-muted); display:flex; gap:14px; margin-top: 8px;}
+  .ribbon-legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .ribbon-legend i{ width:10px; height:10px; border-radius:1px; display:inline-block; }
+
+  .notes{ margin-top: 14px; font-size: 0.85rem; color: var(--ink-muted); border-top: 1px dashed var(--line); padding-top: 10px; white-space: pre-wrap;}
+
+  .empty{
+    text-align:center; padding: 60px 20px; color: var(--ink-muted);
+    border: 1px dashed var(--line); border-radius: var(--radius);
+    font-family:'IBM Plex Mono', monospace; font-size: 0.85rem;
+  }
+
+  /* Modal */
+  .overlay{
+    display:none; position:fixed; inset:0; background: rgba(38,32,26,0.45);
+    align-items:center; justify-content:center; padding: 20px; z-index: 50;
+  }
+  .overlay.open{ display:flex; }
+  .modal{
+    background: var(--card); border-radius: var(--radius); max-width: 520px; width:100%;
+    max-height: 88vh; overflow-y:auto; padding: 28px; border: 1px solid var(--line);
+  }
+  .modal h3{ font-family:'Fraunces', serif; font-weight:700; margin: 0 0 18px; font-size: 1.3rem; }
+  .field{ margin-bottom: 14px; }
+  .field label{ display:block; font-size: 0.75rem; text-transform:uppercase; letter-spacing:0.05em; color: var(--ink-muted); margin-bottom: 5px; }
+  .field input, .field select, .field textarea{
+    width:100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--radius);
+    font-family:'IBM Plex Sans', sans-serif; font-size: 0.9rem; background: #fff; color: var(--ink);
+  }
+  .field textarea{ resize: vertical; min-height: 60px; font-family:'IBM Plex Sans', sans-serif;}
+  .field-row{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .hint{ font-size: 0.75rem; color: var(--ink-muted); margin-top: 4px; font-family:'IBM Plex Mono', monospace; }
+  .days-picker{ display:flex; gap:6px; flex-wrap:wrap; }
+  .days-picker label{
+    display:flex; align-items:center; gap: 5px; border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 6px 9px; font-size: 0.78rem; cursor:pointer; text-transform:none; letter-spacing:0;
+  }
+  .days-picker input{ width:auto; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap: 10px; margin-top: 20px; }
+  .btn{ padding: 10px 18px; border-radius: var(--radius); font-family:'IBM Plex Sans', sans-serif; font-weight:600; font-size:0.85rem; cursor:pointer; border:1px solid transparent;}
+  .btn.primary{ background: var(--ink); color: var(--paper); }
+  .btn.primary:hover{ background: var(--amber-deep); }
+  .btn.ghost{ background:none; border-color: var(--line); color: var(--ink-muted); }
+  .btn.ghost:hover{ border-color: var(--ink); color: var(--ink); }
+  .btn.danger{ background:none; border-color: var(--danger); color: var(--danger); }
+
+  [data-conditional]{ display:none; }
+
+  /* View switcher */
+  .view-switch{
+    display:flex; gap:4px; background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 4px; margin-bottom: 22px;
+  }
+  .view-btn{
+    flex:1; background:none; border:none; padding: 9px 6px; border-radius: 2px;
+    font-family:'IBM Plex Sans', sans-serif; font-weight:600; font-size: 0.82rem;
+    color: var(--ink-muted); cursor:pointer;
+  }
+  .view-btn.active{ background: var(--ink); color: var(--paper); }
+
+  /* Overview */
+  .overview-row{
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 10px;
+  }
+  .overview-row-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom: 8px; gap: 10px;}
+  .overview-row-head .name{ font-family:'Fraunces', serif; font-weight:600; font-size: 1.02rem; display:flex; align-items:center; gap:8px;}
+  .overview-row-head .name i{ width:11px; height:11px; border-radius:50%; display:inline-block; flex-shrink:0;}
+  .overview-row-head .meta{ font-family:'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--ink-muted); white-space:nowrap;}
+  .overview-track{ position:relative; height: 8px; background: var(--off-day); opacity:0.5; border-radius: 6px; overflow:hidden;}
+  .overview-fill{ position:absolute; left:0; top:0; bottom:0; border-radius: 6px; }
+  .overview-today-marker{ position:absolute; top:-3px; bottom:-3px; width:2px; background: var(--ink);}
+
+  /* Calendar */
+  .cal-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px; }
+  .cal-header h3{ font-family:'Fraunces', serif; font-weight:700; font-size: 1.15rem; margin:0; }
+  .cal-nav{ display:flex; gap:8px; }
+  .cal-nav button{
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    width: 32px; height: 32px; cursor:pointer; font-size: 0.9rem; color: var(--ink);
+  }
+  .cal-legend{ display:flex; flex-wrap:wrap; gap: 10px 14px; margin-bottom: 16px; }
+  .cal-legend span{ display:flex; align-items:center; gap:6px; font-size: 0.75rem; color: var(--ink-muted); }
+  .cal-legend i{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .cal-grid{ display:grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+  .cal-dow{ text-align:center; font-size: 0.62rem; text-transform:uppercase; letter-spacing:0.04em; color: var(--ink-muted); padding-bottom: 4px; }
+  .cal-day{
+    aspect-ratio: 1; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 4px; display:flex; flex-direction:column; gap:2px; position:relative;
+  }
+  .cal-day.pad{ background:none; border:none; }
+  .cal-day.today{ border: 2px solid var(--ink); }
+  .cal-day .num{ font-family:'IBM Plex Mono', monospace; font-size: 0.62rem; color: var(--ink-muted); }
+  .cal-dots{ display:flex; flex-wrap:wrap; gap: 2px; margin-top:auto; }
+  .cal-dots i{ width:6px; height:6px; border-radius:50%; display:inline-block; }
+  .cal-flags{ position:absolute; top:2px; right:2px; display:flex; gap:1px; font-size:0.62rem; line-height:1; }
+  .cal-milestones{ margin-top: 18px; }
+  .cal-milestones h4{
+    font-family:'Fraunces', serif; font-weight:600; font-size:0.9rem; margin: 0 0 10px;
+  }
+  .cal-milestone-item{
+    display:flex; align-items:baseline; gap: 8px; font-size: 0.82rem; padding: 8px 10px;
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 6px;
+  }
+  .cal-milestone-item i{ width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0; }
+  .cal-milestone-item .m-date{ font-family:'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--ink-muted); white-space:nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Peptide Log</h1>
+      <p>Reconstitution, dosing &amp; cycle tracking</p>
+    </div>
+    <div class="stamp" id="todayStamp"></div>
+  </header>
+
+  <button class="add-btn" id="openAdd">+ New Peptide</button>
+
+  <div class="backup-bar">
+    <button id="exportBtn">Export backup</button>
+    <button id="importBtn">Import backup</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none;">
+  </div>
+
+  <div class="view-switch" id="viewSwitch">
+    <button class="view-btn active" data-view="cards">Peptides</button>
+    <button class="view-btn" data-view="overview">Progress Tracker</button>
+    <button class="view-btn" data-view="calendar">Calendar</button>
+  </div>
+
+  <div id="list"></div>
+  <div class="empty" id="emptyState" style="display:none;">No peptides logged yet. Add your first one above.</div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="modalTitle">New Peptide</h3>
+    <form id="peptideForm">
+      <input type="hidden" id="peptideId">
+
+      <div class="field">
+        <label for="name">Peptide name</label>
+        <input type="text" id="name" placeholder="e.g. BPC-157" required>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="bottleDose">Dose in bottle (mg)</label>
+          <input type="number" step="any" id="bottleDose" placeholder="10" required>
+        </div>
+        <div class="field">
+          <label for="reconVolume">Reconstituted with (mL)</label>
+          <input type="number" step="any" id="reconVolume" placeholder="2" required>
+        </div>
+      </div>
+      <div class="hint" id="concentrationHint">Concentration: —</div>
+
+      <div class="field" style="margin-top:14px;">
+        <label>Dose per injection</label>
+        <div style="display:flex; gap:8px;">
+          <input type="number" step="any" id="doseAmount" placeholder="250" required style="flex:2;">
+          <select id="doseUnit" style="flex:1;">
+            <option value="mcg">mcg</option>
+            <option value="mg">mg</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="syringeCapacity">Syringe size</label>
+          <select id="syringeCapacity">
+            <option value="0.3">3/10cc (0.3mL)</option>
+            <option value="0.5">1/2cc (0.5mL)</option>
+            <option value="1">1cc (1.0mL)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="syringeScale">Syringe markings</label>
+          <select id="syringeScale">
+            <option value="100">U100 (100 units/mL)</option>
+            <option value="40">U40 (40 units/mL)</option>
+            <option value="ml">Direct mL markings</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Calculated syringe reading</label>
+        <div class="hint" id="unitsHint" style="font-size:0.95rem;">—</div>
+      </div>
+      <div class="field">
+        <label for="syringeUnits">Actual reading, if different (optional)</label>
+        <input type="number" step="any" id="syringeUnits" placeholder="e.g. rounded to nearest mark on your syringe">
+      </div>
+
+      <div class="field">
+        <label for="scheduleType">Schedule</label>
+        <select id="scheduleType">
+          <option value="daily">Daily</option>
+          <option value="weekly">Specific days of the week</option>
+          <option value="custom">On X days / off Y days</option>
+        </select>
+      </div>
+
+      <div class="field" data-conditional="weekly">
+        <label>Which days</label>
+        <div class="days-picker">
+          <label><input type="checkbox" value="0" class="wk-day"> Sun</label>
+          <label><input type="checkbox" value="1" class="wk-day"> Mon</label>
+          <label><input type="checkbox" value="2" class="wk-day"> Tue</label>
+          <label><input type="checkbox" value="3" class="wk-day"> Wed</label>
+          <label><input type="checkbox" value="4" class="wk-day"> Thu</label>
+          <label><input type="checkbox" value="5" class="wk-day"> Fri</label>
+          <label><input type="checkbox" value="6" class="wk-day"> Sat</label>
+        </div>
+      </div>
+
+      <div class="field-row" data-conditional="custom">
+        <div class="field">
+          <label for="onDays">Days on</label>
+          <input type="number" id="onDays" placeholder="5">
+        </div>
+        <div class="field">
+          <label for="offDays">Days off</label>
+          <input type="number" id="offDays" placeholder="2">
+        </div>
+      </div>
+
+      <div class="field-row" style="margin-top:14px;">
+        <div class="field">
+          <label for="startDate">Cycle start date</label>
+          <input type="date" id="startDate" required>
+        </div>
+        <div class="field">
+          <label for="cycleWeeks">Cycle length (weeks)</label>
+          <input type="number" id="cycleWeeks" placeholder="8" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="notes">Notes (optional)</label>
+        <textarea id="notes" placeholder="Storage, supplier, effects..."></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn primary">Save peptide</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'peptideTrackerData';
+let peptides = [];
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    peptides = raw ? JSON.parse(raw) : [];
+  }catch(e){ peptides = []; }
+  // migrate entries saved under the old single-unit / U100-only schema
+  peptides.forEach(p=>{
+    if(p.doseAmount === undefined && p.doseMg !== undefined){
+      p.doseAmount = p.doseMg;
+      p.doseUnit = 'mg';
+      p.syringeCapacity = 0.3;
+      p.syringeScale = '100';
+      delete p.doseMg;
+    }
+  });
+  saveData();
+}
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(peptides));
+}
+
+function fmt(n){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  return (Math.round(n*100)/100).toString();
+}
+
+function dayLabelToday(){
+  const el = document.getElementById('todayStamp');
+  el.textContent = new Date().toLocaleDateString(undefined,{weekday:'short', year:'numeric', month:'short', day:'numeric'});
+}
+
+function daysBetween(a,b){
+  const MS = 1000*60*60*24;
+  const d1 = new Date(a.getFullYear(),a.getMonth(),a.getDate());
+  const d2 = new Date(b.getFullYear(),b.getMonth(),b.getDate());
+  return Math.round((d2-d1)/MS);
+}
+
+function computeReading(p){
+  const conc = p.bottleDose / p.reconVolume; // mg per mL
+  const doseInMg = p.doseUnit === 'mcg' ? p.doseAmount/1000 : p.doseAmount;
+  if(!conc || !doseInMg){
+    return { value: null, unitLabel: '', exceeds: false, capacityLimit: null };
+  }
+  if(p.syringeScale === 'ml'){
+    const value = doseInMg / conc;
+    return { value, unitLabel: 'mL', exceeds: value > p.syringeCapacity, capacityLimit: p.syringeCapacity };
+  }
+  const factor = parseInt(p.syringeScale);
+  const value = (doseInMg / conc) * factor;
+  const capacityLimit = p.syringeCapacity * factor;
+  return { value, unitLabel: 'units', exceeds: value > capacityLimit, capacityLimit };
+}
+
+function isOnDay(p, dayIndex, dateObj){
+  if(p.scheduleType === 'daily') return true;
+  if(p.scheduleType === 'weekly'){
+    return (p.weeklyDays||[]).includes(dateObj.getDay());
+  }
+  if(p.scheduleType === 'custom'){
+    const cycle = (p.onDays||0) + (p.offDays||0);
+    if(cycle <= 0) return true;
+    const pos = ((dayIndex % cycle) + cycle) % cycle;
+    return pos < (p.onDays||0);
+  }
+  return true;
+}
+
+function scheduleText(p){
+  if(p.scheduleType === 'daily') return 'Daily';
+  if(p.scheduleType === 'weekly'){
+    const names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const days=(p.weeklyDays||[]).slice().sort().map(d=>names[d]);
+    return days.length ? days.join(', ') : 'No days selected';
+  }
+  if(p.scheduleType === 'custom') return `${p.onDays||0} days on / ${p.offDays||0} days off`;
+  return '';
+}
+
+function renderRibbon(p){
+  const start = new Date(p.startDate);
+  const totalDays = (p.cycleWeeks||0)*7;
+  const today = new Date();
+  const elapsed = daysBetween(start, today);
+  let html = '<div class="ribbon">';
+  const maxRender = Math.min(totalDays, 700);
+  for(let i=0;i<maxRender;i++){
+    const d = new Date(start);
+    d.setDate(d.getDate()+i);
+    const on = isOnDay(p, i, d);
+    const isPast = i <= elapsed;
+    const isToday = i === elapsed;
+    html += `<div class="day ${on?'on-day':''} ${isPast?'past':''} ${isToday?'today':''}" title="${d.toLocaleDateString()}"></div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function progressStatus(p){
+  const start = new Date(p.startDate);
+  const today = new Date();
+  const elapsed = daysBetween(start, today);
+  const totalDays = (p.cycleWeeks||0)*7;
+  const currentDay = elapsed+1;
+  const currentWeek = Math.min(Math.ceil(currentDay/7), p.cycleWeeks||0);
+  const finished = elapsed >= totalDays;
+  const notStarted = elapsed < 0;
+  return {elapsed, totalDays, currentDay, currentWeek, finished, notStarted};
+}
+
+const PALETTE = ['#C0752B','#35655F','#8B4F6B','#6B7F3D','#3D5A80','#A8503C','#B7962C','#57626B'];
+function colorForPeptide(id){
+  let hash = 0;
+  for(let i=0;i<id.length;i++){ hash = (hash*31 + id.charCodeAt(i)) >>> 0; }
+  return PALETTE[hash % PALETTE.length];
+}
+
+let currentView = 'cards';
+let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+function render(){
+  const empty = document.getElementById('emptyState');
+  const list = document.getElementById('list');
+  if(peptides.length === 0){
+    empty.style.display = 'block';
+    list.innerHTML = '';
+    return;
+  }
+  empty.style.display = 'none';
+  if(currentView === 'cards') renderCards();
+  else if(currentView === 'overview') renderOverview();
+  else renderCalendar();
+}
+
+function renderCards(){
+  const list = document.getElementById('list');
+  const empty = document.getElementById('emptyState');
+  list.innerHTML = '';
+  if(peptides.length === 0){
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  peptides.forEach(p=>{
+    const concentration = p.bottleDose / p.reconVolume;
+    const reading = computeReading(p);
+    const status = progressStatus(p);
+
+    const card = document.createElement('div');
+    card.className = 'card' + (status.finished ? ' finished' : '');
+    card.innerHTML = `
+      <div class="card-head">
+        <div>
+          <h2>${escapeHtml(p.name)}</h2>
+          <div class="bottle-label">${fmt(p.bottleDose)}mg / ${fmt(p.reconVolume)}mL &middot; ${fmt(concentration)}mg per mL</div>
+        </div>
+        <div class="card-actions">
+          <button class="icon-btn" data-edit="${p.id}">Edit</button>
+          <button class="icon-btn" data-del="${p.id}">Delete</button>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat">
+          <div class="label">Per injection</div>
+          <div class="value">${fmt(p.doseAmount)}${p.doseUnit}</div>
+        </div>
+        <div class="stat">
+          <div class="label">Syringe reading</div>
+          <div class="value">${p.syringeUnits ? fmt(p.syringeUnits)+' '+reading.unitLabel+' (logged)' : fmt(reading.value)+' '+reading.unitLabel+' (calc.)'}${reading.exceeds ? ' ⚠' : ''}</div>
+        </div>
+        <div class="stat">
+          <div class="label">Cycle length</div>
+          <div class="value">${p.cycleWeeks} weeks</div>
+        </div>
+      </div>
+      ${reading.exceeds ? `<div class="hint" style="color:var(--danger); margin-bottom:10px;">This dose is larger than your ${fmt(reading.capacityLimit)} ${reading.unitLabel} syringe holds — consider a bigger syringe or a more concentrated reconstitution.</div>` : ''}
+
+      <div class="schedule-line">Schedule: <b>${scheduleText(p)}</b> &middot; started ${new Date(p.startDate).toLocaleDateString()}</div>
+
+      <div class="progress-meta">
+        <div class="day-count">
+          ${status.notStarted ? 'Starts in '+Math.abs(status.elapsed)+' day(s)' :
+            status.finished ? `Day ${status.totalDays} of ${status.totalDays}` :
+            `Day ${status.currentDay} of ${status.totalDays} &middot; Week ${status.currentWeek} of ${p.cycleWeeks}`}
+        </div>
+        <div class="status-pill ${status.finished?'done':''}">${status.notStarted ? 'Upcoming' : status.finished ? 'Cycle complete' : 'In progress'}</div>
+      </div>
+      ${renderRibbon(p)}
+      <div class="ribbon-legend">
+        <span><i style="background:var(--amber);opacity:.35"></i>Dosing day</span>
+        <span><i style="background:var(--off-day);opacity:.35"></i>Off day</span>
+        <span><i style="background:var(--amber);opacity:1;outline:2px solid var(--ink)"></i>Today</span>
+      </div>
+      ${p.notes ? `<div class="notes">${escapeHtml(p.notes)}</div>` : ''}
+    `;
+    list.appendChild(card);
+  });
+
+  list.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openEdit(btn.dataset.edit));
+  });
+  list.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=> deletePeptide(btn.dataset.del));
+  });
+}
+
+function renderOverview(){
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+
+  peptides.forEach(p=>{
+    const status = progressStatus(p);
+    const color = colorForPeptide(p.id);
+    const pct = status.notStarted ? 0 : Math.min(100, (status.currentDay/status.totalDays)*100);
+    const todayPct = status.notStarted ? 0 : Math.min(100, ((status.elapsed)/status.totalDays)*100);
+
+    const row = document.createElement('div');
+    row.className = 'overview-row';
+    row.innerHTML = `
+      <div class="overview-row-head">
+        <div class="name"><i style="background:${color}"></i>${escapeHtml(p.name)}</div>
+        <div class="meta">${status.notStarted ? 'Upcoming' : status.finished ? 'Complete' : `Week ${status.currentWeek}/${p.cycleWeeks}`}</div>
+      </div>
+      <div class="overview-track">
+        <div class="overview-fill" style="width:${pct}%; background:${color};"></div>
+        ${!status.notStarted && !status.finished ? `<div class="overview-today-marker" style="left:${todayPct}%"></div>` : ''}
+      </div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function renderCalendar(){
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+
+  const year = calendarMonth.getFullYear();
+  const month = calendarMonth.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const startOffset = firstDay.getDay();
+  const monthLabel = calendarMonth.toLocaleDateString(undefined,{month:'long', year:'numeric'});
+  const today = new Date();
+
+  let html = `
+    <div class="cal-header">
+      <h3>${monthLabel}</h3>
+      <div class="cal-nav">
+        <button id="calPrev">&larr;</button>
+        <button id="calNext">&rarr;</button>
+      </div>
+    </div>
+    <div class="cal-legend">
+      ${peptides.map(p=>`<span><i style="background:${colorForPeptide(p.id)}"></i>${escapeHtml(p.name)}</span>`).join('')}
+    </div>
+    <div class="cal-grid">
+      ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}
+  `;
+
+  for(let i=0;i<startOffset;i++){ html += `<div class="cal-day pad"></div>`; }
+
+  const monthMilestones = [];
+
+  for(let d=1; d<=daysInMonth; d++){
+    const dateObj = new Date(year, month, d);
+    const isToday = dateObj.toDateString() === today.toDateString();
+    const dots = peptides.filter(p=>{
+      const start = new Date(p.startDate);
+      const dayIndex = daysBetween(start, dateObj);
+      const totalDays = (p.cycleWeeks||0)*7;
+      if(dayIndex < 0 || dayIndex >= totalDays) return false;
+      return isOnDay(p, dayIndex, dateObj);
+    }).map(p=>`<i style="background:${colorForPeptide(p.id)}"></i>`).join('');
+
+    const flags = [];
+    peptides.forEach(p=>{
+      const start = new Date(p.startDate);
+      const dayIndex = daysBetween(start, dateObj);
+      const totalDays = (p.cycleWeeks||0)*7;
+      if(dayIndex < 0 || dayIndex >= totalDays) return;
+      const daysRemaining = totalDays - dayIndex - 1;
+      const color = colorForPeptide(p.id);
+      if(daysRemaining === 14){
+        flags.push('⏰');
+        monthMilestones.push({day:d, dateObj, color, name:p.name, message:'2 weeks left on this cycle!'});
+      } else if(daysRemaining === 0){
+        flags.push('🎉');
+        monthMilestones.push({day:d, dateObj, color, name:p.name, message:'Wahoo! Last day to pin.'});
+      }
+    });
+
+    html += `<div class="cal-day ${isToday?'today':''}">
+      ${flags.length ? `<div class="cal-flags">${flags.join('')}</div>` : ''}
+      <div class="num">${d}</div>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }
+
+  html += `</div>`;
+
+  if(monthMilestones.length){
+    monthMilestones.sort((a,b)=>a.day-b.day);
+    html += `<div class="cal-milestones"><h4>Milestones this month</h4>` +
+      monthMilestones.map(m=>`
+        <div class="cal-milestone-item">
+          <i style="background:${m.color}"></i>
+          <span class="m-date">${m.dateObj.toLocaleDateString(undefined,{month:'short', day:'numeric'})}</span>
+          <span><b>${escapeHtml(m.name)}</b> — ${m.message}</span>
+        </div>
+      `).join('') +
+      `</div>`;
+  }
+
+  list.innerHTML = html;
+
+  document.getElementById('calPrev').addEventListener('click', ()=>{
+    calendarMonth = new Date(year, month-1, 1);
+    renderCalendar();
+  });
+  document.getElementById('calNext').addEventListener('click', ()=>{
+    calendarMonth = new Date(year, month+1, 1);
+    renderCalendar();
+  });
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+function deletePeptide(id){
+  if(!confirm('Delete this peptide entry? This cannot be undone.')) return;
+  peptides = peptides.filter(p=>p.id !== id);
+  saveData();
+  render();
+}
+
+function openEdit(id){
+  const p = peptides.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('modalTitle').textContent = 'Edit Peptide';
+  document.getElementById('peptideId').value = p.id;
+  document.getElementById('name').value = p.name;
+  document.getElementById('bottleDose').value = p.bottleDose;
+  document.getElementById('reconVolume').value = p.reconVolume;
+  document.getElementById('doseAmount').value = p.doseAmount;
+  document.getElementById('doseUnit').value = p.doseUnit;
+  document.getElementById('syringeCapacity').value = p.syringeCapacity;
+  document.getElementById('syringeScale').value = p.syringeScale;
+  document.getElementById('syringeUnits').value = p.syringeUnits || '';
+  document.getElementById('scheduleType').value = p.scheduleType;
+  document.getElementById('startDate').value = p.startDate;
+  document.getElementById('cycleWeeks').value = p.cycleWeeks;
+  document.getElementById('onDays').value = p.onDays || '';
+  document.getElementById('offDays').value = p.offDays || '';
+  document.querySelectorAll('.wk-day').forEach(cb=>{
+    cb.checked = (p.weeklyDays||[]).includes(parseInt(cb.value));
+  });
+  updateConditionalFields();
+  updateHints();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function openAdd(){
+  document.getElementById('peptideForm').reset();
+  document.getElementById('peptideId').value = '';
+  document.getElementById('modalTitle').textContent = 'New Peptide';
+  updateConditionalFields();
+  updateHints();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function updateConditionalFields(){
+  const type = document.getElementById('scheduleType').value;
+  document.querySelectorAll('[data-conditional]').forEach(el=>{
+    el.style.display = el.dataset.conditional === type ? 'block' : 'none';
+  });
+}
+
+function updateHints(){
+  const bottleDose = parseFloat(document.getElementById('bottleDose').value);
+  const reconVolume = parseFloat(document.getElementById('reconVolume').value);
+  const doseAmount = parseFloat(document.getElementById('doseAmount').value);
+  const doseUnit = document.getElementById('doseUnit').value;
+  const syringeCapacity = parseFloat(document.getElementById('syringeCapacity').value);
+  const syringeScale = document.getElementById('syringeScale').value;
+  const concHint = document.getElementById('concentrationHint');
+  const unitsHint = document.getElementById('unitsHint');
+
+  if(bottleDose && reconVolume){
+    const conc = bottleDose/reconVolume;
+    concHint.textContent = `Concentration: ${fmt(conc)}mg per mL`;
+
+    if(doseAmount){
+      const reading = computeReading({bottleDose, reconVolume, doseAmount, doseUnit, syringeCapacity, syringeScale});
+      unitsHint.innerHTML = `Draw to <strong>${fmt(reading.value)} ${reading.unitLabel}</strong> on this syringe` +
+        (reading.exceeds ? `<br><span style="color:var(--danger);">⚠ Exceeds this syringe's ${fmt(reading.capacityLimit)} ${reading.unitLabel} capacity — try a bigger syringe or more concentrated reconstitution.</span>` : '');
+    } else {
+      unitsHint.textContent = '—';
+    }
+  } else {
+    concHint.textContent = 'Concentration: —';
+    unitsHint.textContent = '—';
+  }
+}
+
+document.getElementById('openAdd').addEventListener('click', openAdd);
+
+function exportData(){
+  const dataStr = JSON.stringify(peptides, null, 2);
+  const blob = new Blob([dataStr], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `peptide-log-backup-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importData(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const imported = JSON.parse(e.target.result);
+      if(!Array.isArray(imported)) throw new Error('Invalid file');
+      const proceed = confirm(`This will import ${imported.length} peptide(s). Entries with matching IDs will be overwritten; others will be added. Continue?`);
+      if(!proceed) return;
+      imported.forEach(entry=>{
+        const idx = peptides.findIndex(p=>p.id === entry.id);
+        if(idx >= 0) peptides[idx] = entry;
+        else peptides.push(entry);
+      });
+      saveData();
+      render();
+      alert('Backup imported.');
+    }catch(err){
+      alert("Couldn't read that file — make sure it's a backup exported from this app.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('exportBtn').addEventListener('click', exportData);
+document.getElementById('importBtn').addEventListener('click', ()=> document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(file) importData(file);
+  e.target.value = '';
+});
+document.querySelectorAll('.view-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentView = btn.dataset.view;
+    render();
+  });
+});
+document.getElementById('cancelBtn').addEventListener('click', closeModal);
+document.getElementById('overlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'overlay') closeModal();
+});
+document.getElementById('scheduleType').addEventListener('change', updateConditionalFields);
+['bottleDose','reconVolume','doseAmount','doseUnit','syringeCapacity','syringeScale'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', updateHints);
+  document.getElementById(id).addEventListener('change', updateHints);
+});
+
+document.getElementById('peptideForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const id = document.getElementById('peptideId').value || ('p_' + Date.now());
+  const scheduleType = document.getElementById('scheduleType').value;
+  const weeklyDays = Array.from(document.querySelectorAll('.wk-day:checked')).map(cb=>parseInt(cb.value));
+
+  const entry = {
+    id,
+    name: document.getElementById('name').value.trim(),
+    bottleDose: parseFloat(document.getElementById('bottleDose').value),
+    reconVolume: parseFloat(document.getElementById('reconVolume').value),
+    doseAmount: parseFloat(document.getElementById('doseAmount').value),
+    doseUnit: document.getElementById('doseUnit').value,
+    syringeCapacity: parseFloat(document.getElementById('syringeCapacity').value),
+    syringeScale: document.getElementById('syringeScale').value,
+    syringeUnits: document.getElementById('syringeUnits').value ? parseFloat(document.getElementById('syringeUnits').value) : null,
+    scheduleType,
+    weeklyDays,
+    onDays: document.getElementById('onDays').value ? parseInt(document.getElementById('onDays').value) : null,
+    offDays: document.getElementById('offDays').value ? parseInt(document.getElementById('offDays').value) : null,
+    startDate: document.getElementById('startDate').value,
+    cycleWeeks: parseInt(document.getElementById('cycleWeeks').value),
+    notes: document.getElementById('notes').value.trim()
+  };
+
+  const existingIndex = peptides.findIndex(p=>p.id===id);
+  if(existingIndex >= 0){
+    peptides[existingIndex] = entry;
+  } else {
+    peptides.push(entry);
+  }
+  saveData();
+  render();
+  closeModal();
+});
+
+dayLabelToday();
+loadData();
+render();
+</script>
+</body>
+</html>
