@@ -1,0 +1,1 @@
+Track your peptide stack with a customizable interface that helps you keep track of your dosage, timing, and cycle length of peptides. Interface lets you view peptides individually, in a calendar view, and it has a progress view that shows your entire stack together. 
